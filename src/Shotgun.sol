@@ -5,9 +5,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AgreementStorage} from "./AgreementStorage.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import "forge-std/console.sol";
+import {IChronicle} from "./interfaces/IChronicle.sol";
 
 contract Shotgun is AgreementStorage {
     using EventsLib for *;
+
+    address public oracleAddress;
+
+    constructor() {}
 
     function createAgreement(address _party1, address _party2, address _targetToken, uint256 _duration)
         external
@@ -18,6 +23,7 @@ contract Shotgun is AgreementStorage {
             party1: _party1,
             party2: _party2,
             targetToken: _targetToken,
+            oracle: oracleAddress,
             duration: _duration,
             bound: false,
             party1Approved: false,

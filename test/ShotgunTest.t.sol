@@ -29,6 +29,7 @@ contract ShotgunTest is ShotgunTestHelper {
             address _party1,
             address _party2,
             address _targetToken,
+            address _oracle,
             uint256 _duration,
             ,
             ,
@@ -46,7 +47,7 @@ contract ShotgunTest is ShotgunTestHelper {
         uint256 agreementId = createAndApproveAgreement();
 
         // Verify the agreement is bound
-        (,,,, bool bound,,,) = shotgun.agreements(agreementId);
+        (,,,,, bool bound,,,) = shotgun.agreements(agreementId);
         console.log("Agreement bound status: %s", bound);
         assert(bound == true);
 
@@ -65,7 +66,7 @@ contract ShotgunTest is ShotgunTestHelper {
         logMakeOfferBalances("Final");
 
         // Validate the offer details
-        (,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
+        (,,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
         assertEq(currentOffer.targetToken, address(targetToken));
         assertEq(currentOffer.paymentToken, address(paymentToken));
         assertEq(currentOffer.price, price);
@@ -94,7 +95,7 @@ contract ShotgunTest is ShotgunTestHelper {
         shotgun.makeOffer(agreementId, address(paymentToken), price, targetTokenAmount);
 
         // Validate the offer details
-        (,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
+        (,,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
         assertEq(currentOffer.targetToken, address(targetToken));
         assertEq(currentOffer.paymentToken, address(paymentToken));
         assertEq(currentOffer.price, price);
@@ -111,7 +112,7 @@ contract ShotgunTest is ShotgunTestHelper {
         shotgun.expireOffer(agreementId);
 
         // Validate the offer has expired and the tokens have been transferred
-        (,,,,,,, currentOffer) = shotgun.agreements(agreementId);
+        (,,,,,,,, currentOffer) = shotgun.agreements(agreementId);
         assert(currentOffer.active == false);
 
         logBalances("Final");
@@ -141,7 +142,7 @@ contract ShotgunTest is ShotgunTestHelper {
         shotgun.makeOffer(agreementId, address(paymentToken), price, targetTokenAmount);
 
         // Validate the offer details
-        (,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
+        (,,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
         assertEq(currentOffer.targetToken, address(targetToken));
         assertEq(currentOffer.paymentToken, address(paymentToken));
         assertEq(currentOffer.price, price);
@@ -155,7 +156,7 @@ contract ShotgunTest is ShotgunTestHelper {
         shotgun.counterOffer(agreementId);
 
         // Validate the counter offer has been accepted and the tokens have been transferred
-        (,,,,,,, currentOffer) = shotgun.agreements(agreementId);
+        (,,,,,,,, currentOffer) = shotgun.agreements(agreementId);
         assert(currentOffer.active == false);
 
         logBalances("Final");
