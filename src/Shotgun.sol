@@ -38,17 +38,45 @@ contract Shotgun is Ownable {
     }
 
     function acceptOffer() external {
-        // TODO: add logic
+        require(currentOffer.active, "No active offer.");
+        require(block.timestamp <= currentOffer.expiry, "Offer has expired.");
+        require(
+            IERC20(currentOffer.token).balanceOf(msg.sender) >= currentOffer.shares,
+            "Insufficient shares to accept offer."
+        );
+
+        IERC20(currentOffer.token).transferFrom(msg.sender, currentOffer.offeror, currentOffer.shares);
+        payable(msg.sender).transfer(currentOffer.shares * currentOffer.price);
+
+        currentOffer.active = false;
         emit OfferAccepted(msg.sender);
     }
 
     function counterOffer() external payable {
-        // TODO: add logic
-        emit OfferCountered(msg.sender);
+        require(currentOffer.active, "No active offer.");
+        require(block.timestamp <= currentOffer.expiry, "Offer has expired.");
+        require(msg.value == currentOffer.shares * currentOffer.price, "Incorrect ETH amount sent.");
+
+        IERC20(currentOffer.token).transferFrom(currentOffer.offeror, msg.sender, currentOffer.shares);
+        payable(currentOffer.offeror).transfer(msg.value);
+
+        currentOffer.active = false;
+        emit CounterOfferMade(msg.sender);
     }
 
-    function rejectOffer() external onlyOwner {
-        // TODO: add logic
-        emit OfferRejected(msg.sender);
+    function expireOffer() external {
+        require(currentOffer.active, "No active offer.");
+        require(block.timestamp > currentOffer.expiry, "Offer has not expired yet.");
+
+        currentOffer.active = false;
+        emit OfferExpired();
     }
+
+    // Withdraw funds from contract
+    function withdraw(uint256 amount) external onlyOwner {
+        payable(owner()).transfer(amount);
+    }
+
+    // Fallback function to receive Ether
+    receive() external payable {}
 }
