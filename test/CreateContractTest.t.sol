@@ -5,12 +5,13 @@ import "forge-std/Test.sol";
 import "../src/Shotgun.sol";
 import "./mock/MockERC20.sol";
 
-contract CreateContractTest is Test {
+contract ShotgunTest is Test {
     Shotgun shotgun;
     MockERC20 targetToken;
     MockERC20 paymentToken;
     address party1 = address(0x1);
     address party2 = address(0x2);
+    address thirdParty = address(0x3);
     uint256 duration = 7 days;
     uint256 initialSupply = 1000 * 10 ** 18; // Adjust according to decimals
 
@@ -54,6 +55,12 @@ contract CreateContractTest is Test {
 
     function testMakeOffer() public {
         uint256 agreementId = shotgun.createAgreement(party1, party2, address(targetToken), duration);
+
+        // Approve the spending from both parties
+        vm.prank(party1);
+        targetToken.approve(address(shotgun), type(uint256).max);
+        vm.prank(party2);
+        targetToken.approve(address(shotgun), type(uint256).max);
 
         // Approve the agreement from both parties
         vm.prank(party1);
@@ -115,5 +122,85 @@ contract CreateContractTest is Test {
         console.log("Final Shotgun Payment Token Balance: %s", finalShotgunBalance);
 
         assertEq(finalShotgunBalance, initialShotgunBalance + (targetTokenAmount * price / 10 ** 18));
+    }
+
+    function testExpireOffer() public {
+        uint256 agreementId = shotgun.createAgreement(party1, party2, address(targetToken), 1 days);
+
+        // Approve the spending from both parties
+        vm.prank(party1);
+        targetToken.approve(address(shotgun), type(uint256).max);
+        vm.prank(party2);
+        targetToken.approve(address(shotgun), type(uint256).max);
+
+        // Approve the agreement from both parties
+        vm.prank(party1);
+        shotgun.approveAgreement(agreementId);
+        vm.prank(party2);
+        shotgun.approveAgreement(agreementId);
+
+        // Verify the agreement is bound
+        (,,,, bool bound,,,) = shotgun.agreements(agreementId);
+        assert(bound == true);
+
+        // Ensure sufficient balance and approval for paymentToken
+        uint256 targetTokenAmount = 100 * 10 ** 18; // Adjust according to decimals
+        uint256 price = 1 * 10 ** 18; // paymentToken has 18 decimals
+
+        // Approve the Shotgun contract to spend party1's target tokens and payment tokens
+        vm.prank(party1);
+        targetToken.approve(address(shotgun), targetTokenAmount);
+        vm.prank(party1);
+        paymentToken.approve(address(shotgun), targetTokenAmount * price / 10 ** 18);
+
+        // Party2 approves the Shotgun contract to spend their target tokens
+        vm.prank(party2);
+        targetToken.approve(address(shotgun), targetTokenAmount);
+
+        // Make an offer
+        vm.prank(party1);
+        shotgun.makeOffer(agreementId, address(paymentToken), price, targetTokenAmount);
+
+        // Validate the offer details
+        (,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
+        assertEq(currentOffer.targetToken, address(targetToken));
+        assertEq(currentOffer.paymentToken, address(paymentToken));
+        assertEq(currentOffer.price, price);
+        assertEq(currentOffer.targetTokenAmount, targetTokenAmount);
+        assertEq(currentOffer.offeror, party1);
+        assert(currentOffer.active == true);
+        assert(currentOffer.staked == true);
+
+        // Check initial balances of parties and contract
+        uint256 initialParty1TargetBalance = targetToken.balanceOf(party1);
+        uint256 initialParty2PaymentBalance = paymentToken.balanceOf(party2);
+        uint256 initialShotgunPaymentBalance = paymentToken.balanceOf(address(shotgun));
+
+        console.log("Initial Party1 Target Token Balance: %s", initialParty1TargetBalance);
+        console.log("Initial Party2 Payment Token Balance: %s", initialParty2PaymentBalance);
+        console.log("Initial Shotgun Payment Token Balance: %s", initialShotgunPaymentBalance);
+
+        // Simulate the passage of time to expire the offer
+        vm.warp(block.timestamp + 2 days);
+
+        // Execute the expireOffer function
+        vm.prank(thirdParty); // Anyone can call this function
+        shotgun.expireOffer(agreementId);
+
+        // Validate the offer has expired and the tokens have been transferred
+        (,,,,,,, currentOffer) = shotgun.agreements(agreementId);
+        assert(currentOffer.active == false);
+
+        uint256 finalParty1TargetBalance = targetToken.balanceOf(party1);
+        uint256 finalParty2PaymentBalance = paymentToken.balanceOf(party2);
+        uint256 finalShotgunPaymentBalance = paymentToken.balanceOf(address(shotgun));
+
+        console.log("Final Party1 Target Token Balance: %s", finalParty1TargetBalance);
+        console.log("Final Party2 Payment Token Balance: %s", finalParty2PaymentBalance);
+        console.log("Final Shotgun Payment Token Balance: %s", finalShotgunPaymentBalance);
+
+        assertEq(finalParty1TargetBalance, initialParty1TargetBalance + targetTokenAmount); // party1's target tokens should be transferred
+        assertEq(finalParty2PaymentBalance, initialParty2PaymentBalance + (targetTokenAmount * price / 10 ** 18)); // party2 should receive the staked payment tokens
+        assertEq(finalShotgunPaymentBalance, initialShotgunPaymentBalance - (targetTokenAmount * price / 10 ** 18)); // Shotgun contract balance should decrease
     }
 }

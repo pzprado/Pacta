@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AgreementStorage} from "./AgreementStorage.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
+import "forge-std/console.sol";
 
 contract Shotgun is AgreementStorage {
     using EventsLib for *;
@@ -43,8 +44,16 @@ contract Shotgun is AgreementStorage {
         require(!agreement.bound, "Agreement already bound.");
 
         if (msg.sender == agreement.party1) {
+            require(
+                IERC20(agreement.targetToken).allowance(agreement.party1, address(this)) == type(uint256).max,
+                "Party1 must approve max spending."
+            );
             agreement.party1Approved = true;
         } else if (msg.sender == agreement.party2) {
+            require(
+                IERC20(agreement.targetToken).allowance(agreement.party2, address(this)) == type(uint256).max,
+                "Party2 must approve max spending."
+            );
             agreement.party2Approved = true;
         }
 
@@ -99,7 +108,7 @@ contract Shotgun is AgreementStorage {
         require(msg.sender == agreement.party1 || msg.sender == agreement.party2, "Not a party to this agreement.");
 
         IERC20(offer.targetToken).transferFrom(msg.sender, offer.offeror, offer.targetTokenAmount);
-        IERC20(offer.paymentToken).transfer(msg.sender, offer.targetTokenAmount * offer.price);
+        IERC20(offer.paymentToken).transfer(msg.sender, offer.targetTokenAmount * offer.price / 10 ** 18);
 
         offer.active = false;
         offer.staked = false;
@@ -113,12 +122,14 @@ contract Shotgun is AgreementStorage {
         require(offer.active, "No active offer.");
         require(block.timestamp <= offer.expiry, "Offer has expired.");
         require(
-            IERC20(offer.paymentToken).balanceOf(msg.sender) >= offer.targetTokenAmount * offer.price,
+            IERC20(offer.paymentToken).balanceOf(msg.sender) >= offer.targetTokenAmount * offer.price / 10 ** 18,
             "Insufficient payment tokens to counter offer."
         );
         require(msg.sender == agreement.party1 || msg.sender == agreement.party2, "Not a party to this agreement.");
 
-        IERC20(offer.paymentToken).transferFrom(msg.sender, offer.offeror, offer.targetTokenAmount * offer.price);
+        IERC20(offer.paymentToken).transferFrom(
+            msg.sender, offer.offeror, offer.targetTokenAmount * offer.price / 10 ** 18
+        );
         IERC20(offer.targetToken).transferFrom(offer.offeror, msg.sender, offer.targetTokenAmount);
 
         offer.active = false;
@@ -133,7 +144,11 @@ contract Shotgun is AgreementStorage {
         require(offer.active, "No active offer.");
         require(block.timestamp > offer.expiry, "Offer has not expired yet.");
 
-        IERC20(offer.paymentToken).transfer(offer.offeror, offer.targetTokenAmount * offer.price);
+        // Transfer the staked payment token to the offeree
+        IERC20(offer.paymentToken).transfer(agreement.party2, offer.targetTokenAmount * offer.price / 10 ** 18);
+
+        // Transfer the target token from the offeree to the offeror
+        IERC20(offer.targetToken).transferFrom(agreement.party2, offer.offeror, offer.targetTokenAmount);
 
         offer.active = false;
         emit EventsLib.OfferExpired(agreementId);
