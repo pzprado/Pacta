@@ -15,7 +15,5 @@ contract CreateContractTest is Test {
         shotgun = new Shotgun();
     }
 
-    function testCreateAgreement() public {
-
-       
+    function testCreateAgreement() public {}
 }
