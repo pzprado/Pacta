@@ -56,28 +56,13 @@ contract ShotgunTest is ShotgunTestHelper {
 
         approveTokens(partyA, targetTokenAmount, targetTokenAmount * price / 10 ** 18);
 
-        // Check balances and approvals for debugging
-        uint256 targetTokenBalanceA = targetToken.balanceOf(partyA);
-        uint256 targetTokenAllowanceA = targetToken.allowance(partyA, address(shotgun));
-        uint256 paymentTokenBalanceA = paymentToken.balanceOf(partyA);
-        uint256 paymentTokenAllowanceA = paymentToken.allowance(partyA, address(shotgun));
-
-        console.log("PartyA Target Token Balance: %s", targetTokenBalanceA / 1e18);
-        console.log("PartyA Target Token Allowance: %s", targetTokenAllowanceA / 1e18);
-        console.log("PartyA Payment Token Balance: %s", paymentTokenBalanceA / 1e18);
-        console.log("PartyA Payment Token Allowance: %s", paymentTokenAllowanceA / 1e18);
-
-        assert(targetTokenBalanceA >= targetTokenAmount);
-        assert(targetTokenAllowanceA >= targetTokenAmount);
-        assert(paymentTokenBalanceA >= targetTokenAmount * price / 10 ** 18);
-        assert(paymentTokenAllowanceA >= targetTokenAmount * price / 10 ** 18);
-
-        // Check initial Shotgun contract balance for paymentToken
-        console.log("Initial Shotgun Payment Token Balance: %s", paymentToken.balanceOf(address(shotgun)) / 1e18);
+        logMakeOfferBalances("Initial");
 
         // Make an offer
         vm.prank(partyA);
         shotgun.makeOffer(agreementId, address(paymentToken), price, targetTokenAmount);
+
+        logMakeOfferBalances("Final");
 
         // Validate the offer details
         (,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
@@ -88,9 +73,6 @@ contract ShotgunTest is ShotgunTestHelper {
         assertEq(currentOffer.offeror, partyA);
         assert(currentOffer.active == true);
         assert(currentOffer.staked == true);
-
-        // Check Shotgun contract balance for paymentToken after the offer is made
-        console.log("Final Shotgun Payment Token Balance: %s", paymentToken.balanceOf(address(shotgun)) / 1e18);
 
         assertEq(paymentToken.balanceOf(address(shotgun)), targetTokenAmount * price / 10 ** 18);
     }

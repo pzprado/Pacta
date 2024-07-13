@@ -40,12 +40,43 @@ contract ShotgunTestHelper is Test {
     }
 
     function logBalances(string memory prefix) internal {
-        console.log("%s PartyA Target Token Balance: %s", prefix, targetToken.balanceOf(partyA) / 1e18);
-        console.log("%s PartyA WETH (Payment Token) Balance: %s", prefix, paymentToken.balanceOf(partyA) / 1e18);
-        console.log("%s PartyB Target Token Balance: %s", prefix, targetToken.balanceOf(partyB) / 1e18);
-        console.log("%s PartyB WETH (Payment Token) Balance: %s", prefix, paymentToken.balanceOf(partyB) / 1e18);
+        console.log("%s Balances", prefix);
+        console.log("Category                 | PartyA                   | PartyB");
+        console.log("-------------------------|--------------------------|--------------------------");
         console.log(
-            "%s Shotgun WETH (Payment Token) Balance: %s", prefix, paymentToken.balanceOf(address(shotgun)) / 1e18
+            "Target Token             | %s                     | %s   ",
+            targetToken.balanceOf(partyA) / 1e18,
+            targetToken.balanceOf(partyB) / 1e18
         );
+        console.log(
+            "WETH (Payment Token)     | %s                     | %s   ",
+            paymentToken.balanceOf(partyA) / 1e18,
+            paymentToken.balanceOf(partyB) / 1e18
+        );
+        console.log("===============================================================================");
+        console.log("                                                                              ");
+        console.log("                                                                              ");
+    }
+
+    function logMakeOfferBalances(string memory prefix) internal {
+        uint256 targetTokenBalanceA = targetToken.balanceOf(partyA);
+        uint256 targetTokenAllowanceA = targetToken.allowance(partyA, address(shotgun));
+        uint256 paymentTokenBalanceA = paymentToken.balanceOf(partyA);
+        uint256 paymentTokenAllowanceA = paymentToken.allowance(partyA, address(shotgun));
+
+        console.log("-------------------------------------------------------------------------------");
+        console.log("%s Balances and Allowances", prefix);
+        console.log("Category                  | PartyA       ");
+        console.log("--------------------------|----------------------------------------------------");
+        console.log("Target Token Balance      | %s", targetTokenBalanceA / 1e18);
+        console.log("Target Token Allowance    | %s", targetTokenAllowanceA / 1e18);
+        console.log("WETH (Payment Token) Bal  | %s", paymentTokenBalanceA / 1e18);
+        console.log("WETH (Payment Token) Allow| %s", paymentTokenAllowanceA / 1e18);
+
+        // Check Shotgun contract balance for paymentToken
+        console.log("Shotgun Payment Token Bal | %s", paymentToken.balanceOf(address(shotgun)) / 1e18);
+        console.log("===============================================================================");
+        console.log("                                                                              ");
+        console.log("                                                                              ");
     }
 }
