@@ -2,43 +2,39 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {AgreementStorage} from "./AgreementStorage.sol";
+import {EventsLib} from "./libraries/EventsLib.sol";
 
-contract Shotgun is Ownable {
-    struct Offer {
-        address token;
-        uint256 price;
-        uint256 tokenAmount;
-        address offeror;
-        uint256 expiry;
-        bool active;
-        bool staked;
+contract Shotgun is AgreementStorage {
+    using EventsLib for *;
+
+    function createAgreement(address _party1, address _party2, address _token, uint256 _duration)
+        external
+        returns (uint256)
+    {
+        agreementCounter++;
+        agreements[agreementCounter] = Agreement({
+            party1: _party1,
+            party2: _party2,
+            token: _token,
+            duration: _duration,
+            bound: false,
+            party1Approved: false,
+            party2Approved: false,
+            currentOffer: Offer({
+                token: _token,
+                price: 0,
+                tokenAmount: 0,
+                offeror: address(0),
+                expiry: 0,
+                active: false,
+                staked: false
+            })
+        });
+
+        emit EventsLib.AgreementCreated(agreementCounter, _party1, _party2, _token, _duration);
+        return agreementCounter;
     }
-
-    struct Agreement {
-        address party1;
-        address party2;
-        address token;
-        uint256 duration;
-        bool bound;
-        bool party1Approved;
-        bool party2Approved;
-        Offer currentOffer;
-    }
-
-    mapping(uint256 => Agreement) public agreements;
-    uint256 public agreementCounter;
-
-    event AgreementCreated(
-        uint256 agreementId, address indexed party1, address indexed party2, address token, uint256 duration
-    );
-    event AgreementBound(uint256 agreementId);
-    event OfferMade(
-        uint256 agreementId, address indexed offeror, address token, uint256 price, uint256 shares, uint256 expiry
-    );
-    event OfferAccepted(uint256 agreementId, address indexed offeree);
-    event CounterOfferMade(uint256 agreementId, address indexed counterOfferor);
-    event OfferExpired(uint256 agreementId);
 
     function makeOffer(address token, uint256 price, uint256 shares, uint256 duration) external {
         require(!currentOffer.active, "An offer is already active.");
@@ -92,7 +88,7 @@ contract Shotgun is Ownable {
     }
 
     // Withdraw funds from contract
-    function withdraw(uint256 amount) external onlyOwner {
+    function withdraw(uint256 amount) external {
         payable(owner()).transfer(amount);
     }
 
