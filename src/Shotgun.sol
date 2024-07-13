@@ -6,7 +6,9 @@ import {AgreementStorage} from "./AgreementStorage.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 
 contract Shotgun is AgreementStorage {
-    function createAgreement(address _party1, address _party2, address _token, uint256 _duration)
+    using EventsLib for *;
+
+    function createAgreement(address _party1, address _party2, address _targetToken, uint256 _duration)
         external
         returns (uint256)
     {
@@ -14,15 +16,16 @@ contract Shotgun is AgreementStorage {
         agreements[agreementCounter] = Agreement({
             party1: _party1,
             party2: _party2,
-            token: _token,
+            targetToken: _targetToken,
             duration: _duration,
             bound: false,
             party1Approved: false,
             party2Approved: false,
             currentOffer: Offer({
-                token: _token,
+                targetToken: _targetToken,
+                paymentToken: address(0),
                 price: 0,
-                tokenAmount: 0,
+                targetTokenAmount: 0,
                 offeror: address(0),
                 expiry: 0,
                 active: false,
@@ -30,7 +33,7 @@ contract Shotgun is AgreementStorage {
             })
         });
 
-        emit EventsLib.AgreementCreated(agreementCounter, _party1, _party2, _token, _duration);
+        emit EventsLib.AgreementCreated(agreementCounter, _party1, _party2, _targetToken, _duration);
         return agreementCounter;
     }
 
@@ -51,25 +54,36 @@ contract Shotgun is AgreementStorage {
         }
     }
 
-    function makeOffer(uint256 agreementId, uint256 price, uint256 shares) external payable {
+    function makeOffer(uint256 agreementId, address paymentToken, uint256 price, uint256 targetTokenAmount) external {
         Agreement storage agreement = agreements[agreementId];
         require(agreement.bound, "Agreement not bound.");
         require(!agreement.currentOffer.active, "An offer is already active.");
         require(msg.sender == agreement.party1 || msg.sender == agreement.party2, "Not a party to this agreement.");
-        require(IERC20(agreement.token).balanceOf(msg.sender) >= shares, "Insufficient shares to make offer.");
-        require(msg.value == shares * price, "Staking amount incorrect.");
+        require(
+            IERC20(agreement.targetToken).balanceOf(msg.sender) >= targetTokenAmount,
+            "Insufficient target tokens to make offer."
+        );
+        require(
+            IERC20(paymentToken).balanceOf(msg.sender) >= targetTokenAmount * price / 10 ** 18,
+            "Insufficient payment tokens to make offer."
+        );
+
+        IERC20(paymentToken).transferFrom(msg.sender, address(this), targetTokenAmount * price / 10 ** 18);
 
         agreement.currentOffer = Offer({
-            token: agreement.token,
+            targetToken: agreement.targetToken,
+            paymentToken: paymentToken,
             price: price,
-            tokenAmount: shares,
+            targetTokenAmount: targetTokenAmount,
             offeror: msg.sender,
             expiry: block.timestamp + agreement.duration,
             active: true,
             staked: true
         });
 
-        emit EventsLib.OfferMade(agreementId, msg.sender, agreement.token, price, shares, agreement.currentOffer.expiry);
+        emit EventsLib.OfferMade(
+            agreementId, msg.sender, agreement.targetToken, price, targetTokenAmount, agreement.currentOffer.expiry
+        );
     }
 
     function acceptOffer(uint256 agreementId) external {
@@ -78,29 +92,34 @@ contract Shotgun is AgreementStorage {
 
         require(offer.active, "No active offer.");
         require(block.timestamp <= offer.expiry, "Offer has expired.");
-        require(IERC20(offer.token).balanceOf(msg.sender) >= offer.tokenAmount, "Insufficient shares to accept offer.");
+        require(
+            IERC20(offer.targetToken).balanceOf(msg.sender) >= offer.targetTokenAmount,
+            "Insufficient target tokens to accept offer."
+        );
         require(msg.sender == agreement.party1 || msg.sender == agreement.party2, "Not a party to this agreement.");
 
-        IERC20(offer.token).transferFrom(msg.sender, offer.offeror, offer.tokenAmount);
-        payable(msg.sender).transfer(offer.tokenAmount * offer.price);
+        IERC20(offer.targetToken).transferFrom(msg.sender, offer.offeror, offer.targetTokenAmount);
+        IERC20(offer.paymentToken).transfer(msg.sender, offer.targetTokenAmount * offer.price);
 
         offer.active = false;
         offer.staked = false;
         emit EventsLib.OfferAccepted(agreementId, msg.sender);
     }
 
-    function counterOffer(uint256 agreementId) external payable {
+    function counterOffer(uint256 agreementId) external {
         Agreement storage agreement = agreements[agreementId];
         Offer storage offer = agreement.currentOffer;
 
         require(offer.active, "No active offer.");
         require(block.timestamp <= offer.expiry, "Offer has expired.");
-        require(msg.value == offer.tokenAmount * offer.price, "Incorrect ETH amount sent.");
+        require(
+            IERC20(offer.paymentToken).balanceOf(msg.sender) >= offer.targetTokenAmount * offer.price,
+            "Insufficient payment tokens to counter offer."
+        );
         require(msg.sender == agreement.party1 || msg.sender == agreement.party2, "Not a party to this agreement.");
 
-        IERC20(offer.token).transferFrom(offer.offeror, msg.sender, offer.tokenAmount);
-        payable(offer.offeror).transfer(msg.value);
-        payable(msg.sender).transfer(offer.tokenAmount * offer.price);
+        IERC20(offer.paymentToken).transferFrom(msg.sender, offer.offeror, offer.targetTokenAmount * offer.price);
+        IERC20(offer.targetToken).transferFrom(offer.offeror, msg.sender, offer.targetTokenAmount);
 
         offer.active = false;
         offer.staked = false;
@@ -113,6 +132,8 @@ contract Shotgun is AgreementStorage {
 
         require(offer.active, "No active offer.");
         require(block.timestamp > offer.expiry, "Offer has not expired yet.");
+
+        IERC20(offer.paymentToken).transfer(offer.offeror, offer.targetTokenAmount * offer.price);
 
         offer.active = false;
         emit EventsLib.OfferExpired(agreementId);
