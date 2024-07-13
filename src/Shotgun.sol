@@ -132,6 +132,9 @@ contract Shotgun is AgreementStorage {
         );
         IERC20(offer.targetToken).transferFrom(offer.offeror, msg.sender, offer.targetTokenAmount);
 
+        // Return the staked payment token to the original offeror
+        IERC20(offer.paymentToken).transfer(offer.offeror, offer.targetTokenAmount * offer.price / 10 ** 18);
+
         offer.active = false;
         offer.staked = false;
         emit EventsLib.CounterOfferMade(agreementId, msg.sender);
