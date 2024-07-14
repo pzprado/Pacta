@@ -18,7 +18,8 @@ contract ShotgunTest is ShotgunTestHelper {
         uint256 initialAgreementCounter = shotgun.agreementCounter();
 
         // Create an agreement
-        uint256 agreementId = shotgun.createAgreement(partyA, partyB, address(targetToken), duration);
+        vm.prank(partyA);
+        uint256 agreementId = shotgun.createAgreement(partyB, address(targetToken), oracle, duration);
 
         // Validate that the agreement counter has increased
         uint256 newAgreementCounter = shotgun.agreementCounter();
@@ -29,7 +30,7 @@ contract ShotgunTest is ShotgunTestHelper {
             address _party1,
             address _party2,
             address _targetToken,
-            address _oracle,
+            ,
             uint256 _duration,
             ,
             ,
@@ -44,6 +45,7 @@ contract ShotgunTest is ShotgunTestHelper {
     }
 
     function testB_MakeOffer() public {
+        vm.prank(partyA);
         uint256 agreementId = createAndApproveAgreement();
 
         // Verify the agreement is bound
@@ -54,8 +56,6 @@ contract ShotgunTest is ShotgunTestHelper {
         // Ensure sufficient balance and approval for paymentToken
         uint256 targetTokenAmount = targetToken.balanceOf(partyB); // Use total amount of target tokens held by partyB
         uint256 price = 1 * 10 ** 18; // paymentToken has 18 decimals
-
-        approveTokens(partyA, targetTokenAmount, targetTokenAmount * price / 10 ** 18);
 
         logMakeOfferBalances("Initial");
 
@@ -79,6 +79,7 @@ contract ShotgunTest is ShotgunTestHelper {
     }
 
     function testC_ExpireOffer() public {
+        vm.prank(partyA);
         uint256 agreementId = createAndApproveAgreement();
 
         // Ensure sufficient balance and approval for paymentToken
@@ -126,6 +127,7 @@ contract ShotgunTest is ShotgunTestHelper {
     }
 
     function testD_CounterOffer() public {
+        vm.prank(partyA);
         uint256 agreementId = createAndApproveAgreement();
 
         logBalances("Initial");

@@ -10,20 +10,16 @@ import {IChronicle} from "./interfaces/IChronicle.sol";
 contract Shotgun is AgreementStorage {
     using EventsLib for *;
 
-    address public oracleAddress;
-
-    constructor() {}
-
-    function createAgreement(address _party1, address _party2, address _targetToken, uint256 _duration)
+    function createAgreement(address _party2, address _targetToken, address _oracle, uint256 _duration)
         external
         returns (uint256)
     {
         agreementCounter++;
         agreements[agreementCounter] = Agreement({
-            party1: _party1,
+            party1: msg.sender,
             party2: _party2,
             targetToken: _targetToken,
-            oracle: oracleAddress,
+            oracle: _oracle,
             duration: _duration,
             bound: false,
             party1Approved: false,
@@ -40,7 +36,7 @@ contract Shotgun is AgreementStorage {
             })
         });
 
-        emit EventsLib.AgreementCreated(agreementCounter, _party1, _party2, _targetToken, _duration);
+        emit EventsLib.AgreementCreated(agreementCounter, msg.sender, _party2, _targetToken, _duration);
         return agreementCounter;
     }
 
@@ -163,9 +159,10 @@ contract Shotgun is AgreementStorage {
         emit EventsLib.OfferExpired(agreementId);
     }
 
-    // Withdraw funds from contract
-    function withdraw(uint256 amount) external {
-        payable(msg.sender).transfer(amount);
+    function getOraclePrice(address oracle) internal view returns (uint256) {
+        // (bool success, uint256 price) = IChronicle(oracle).tryRead();
+        // require(success, "Failed to read from oracle");
+        // return price;
     }
 
     // Fallback function to receive Ether

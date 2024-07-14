@@ -12,12 +12,14 @@ contract ShotgunTestHelper is Test {
     address partyA = address(0x1);
     address partyB = address(0x2);
     address thirdParty = address(0x3);
+    address oracle = address(0x4);
     uint256 duration = 7 days;
     uint256 initialSupply = 1000 * 10 ** 18; // Adjust according to decimals
 
     function approveTokens(address _party, uint256 _targetTokenAmount, uint256 _paymentTokenAmount) internal {
         vm.prank(_party);
         targetToken.approve(address(shotgun), _targetTokenAmount);
+
         vm.prank(_party);
         paymentToken.approve(address(shotgun), _paymentTokenAmount);
     }
@@ -28,7 +30,7 @@ contract ShotgunTestHelper is Test {
     }
 
     function createAndApproveAgreement() internal returns (uint256) {
-        uint256 agreementId = shotgun.createAgreement(partyA, partyB, address(targetToken), duration);
+        uint256 agreementId = shotgun.createAgreement(partyB, address(targetToken), address(this), duration);
 
         approveTokens(partyA, type(uint256).max, type(uint256).max);
         approveTokens(partyB, type(uint256).max, type(uint256).max);
