@@ -5,7 +5,7 @@ import "./helpers/ShotgunTestHelper.sol";
 
 contract ShotgunTest is ShotgunTestHelper {
     function setUp() public {
-        shotgun = new Shotgun();
+        shotgun = new Shotgun(selfKisser);
         targetToken = new MockERC20("MockToken", "MTK");
         paymentToken = new MockERC20("Wrapped ETH", "WETH");
         targetToken.mint(partyA, initialSupply);

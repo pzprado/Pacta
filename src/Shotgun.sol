@@ -5,10 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AgreementStorage} from "./AgreementStorage.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import "forge-std/console.sol";
-import {IChronicle} from "./interfaces/IChronicle.sol";
+import {IChronicle, ISelfKisser} from "./interfaces/IChronicle.sol";
 
 contract Shotgun is AgreementStorage {
     using EventsLib for *;
+
+    ISelfKisser public selfKisser;
+
+    constructor(address _selfKisser) {
+        selfKisser = ISelfKisser(_selfKisser);
+    }
 
     function createAgreement(address _party2, address _targetToken, address _oracle, uint256 _duration)
         external
@@ -159,10 +165,15 @@ contract Shotgun is AgreementStorage {
         emit EventsLib.OfferExpired(agreementId);
     }
 
-    function getOraclePrice(address oracle) internal view returns (uint256) {
-        // (bool success, uint256 price) = IChronicle(oracle).tryRead();
-        // require(success, "Failed to read from oracle");
-        // return price;
+    function getOfferValuation(uint256 agreementId) public view returns (uint256 offerPrice, uint256 oraclePrice) {
+        Agreement storage agreement = agreements[agreementId];
+        Offer storage offer = agreement.currentOffer;
+
+        require(offer.active, "No active offer.");
+
+        (uint256 oracleValue,) = IChronicle(agreement.oracle).readWithAge();
+
+        return (offer.price, oracleValue);
     }
 
     // Fallback function to receive Ether

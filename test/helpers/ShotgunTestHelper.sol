@@ -13,6 +13,7 @@ contract ShotgunTestHelper is Test {
     address partyB = address(0x2);
     address thirdParty = address(0x3);
     address oracle = address(0x4);
+    address selfKisser = address(0x5);
     uint256 duration = 7 days;
     uint256 initialSupply = 1000 * 10 ** 18; // Adjust according to decimals
 
