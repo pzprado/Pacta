@@ -1,6 +1,8 @@
-# Shotgun Clause Smart Contract
+# Pacta
 
-This repository contains the implementation of a general-purpose Shotgun Clause smart contract on the Ethereum blockchain. The contract facilitates the buyout of shares between shareholders using ERC20 tokens. It leverages Solidity to implement the core functionalities, ensuring transparency, security, and automation in the M&A process.
+Institutional grade Shareholders Agreement onchain. A Shotgun Clause empowers a world of RWA, Tradfi Institutions and Crypto Native Institutions to coordinate and resolve disputes onchain.
+
+This repository contains the implementation of a general-purpose Shotgun Clause smart contract on the Ethereum blockchain. The contract facilitates the buyout of shares between shareholders using ERC20 tokens. It implements the core functionalities for a transaction between two parties, ensuring transparency, security, and automation in the M&A process.
 
 ## Overview
 
@@ -25,7 +27,6 @@ The main contract that manages the Shotgun Clause process.
 - `acceptOffer()`: Allows the offeree to accept the offer and sell their shares to the offeror.
 - `counterOffer()`: Allows the offeree to counter the offer and buy out the offeror’s shares.
 - `expireOffer()`: Marks the offer as expired if no action is taken before the expiry time.
-- `withdraw(uint256 amount)`: Allows the contract owner to withdraw funds from the contract.
 
 #### Events
 
@@ -100,6 +101,25 @@ The main contract that manages the Shotgun Clause process.
     ```solidity
     expireOffer();
     ```
+    
+## Scenarios Matrix
+
+| Scenario            | Party A Action              | Party A Outcome                                  | Party B Action              | Party B Outcome                                  |
+|---------------------|-----------------------------|--------------------------------------------------|-----------------------------|--------------------------------------------------|
+| **Create Agreement**| Propose agreement           | Agreement terms set; awaits Party B's approval   | Approve or reject agreement | If approved, agreement is established            |
+| **Make Offer**      | Make an offer               | Stakes payment token; initiates offer            | Review offer                | Can accept, counter, or ignore the offer         |
+| **Accept Offer**    | Wait for acceptance         | Receives target tokens if offer accepted         | Accept offer                | Receives payment tokens; transfers target tokens |
+| **Counter Offer**   | Review counter offer        | Can accept or reject counter offer               | Make counter offer          | Stakes payment token; proposes new terms         |
+| **Expire Offer**    | Offer not accepted in time  | Original offer expired; gets back staked tokens  | Offer not accepted in time  | Original offer expired; no changes in holdings   |
+
+## Chronicle Integration
+Pacta uses Chronicle oracles to fetch real-time data for offer valuations. The oracles ensure that the offer prices are accurate and up-to-date, providing a fair and transparent mechanism for all parties involved.
+
+### Using Chronicle:
+- Ensure the smart contract address is whitelisted by the Chronicle's SelfKisser contract.
+- Use the `getOfferValuation` function to fetch the current oracle price and compare it with the offered price.
+
+
 
 ## License
 
