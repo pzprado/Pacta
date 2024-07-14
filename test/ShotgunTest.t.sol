@@ -164,4 +164,41 @@ contract ShotgunTest is ShotgunTestHelper {
         assertEq(finalTargetTokenBalanceB, initialSupply * 2); // partyB should receive target tokens from partyA
         assertEq(paymentToken.balanceOf(address(shotgun)), 0); // Shotgun contract balance should remain the same
     }
+
+    function testE_GetOfferValuation() public {
+        vm.prank(partyA);
+        uint256 agreementId = createAndApproveAgreement();
+
+        // Ensure sufficient balance and approval for paymentToken
+        uint256 targetTokenAmount = targetToken.balanceOf(partyB); // Use total amount of target tokens held by partyB
+        uint256 price = 1 * 10 ** 18; // paymentToken has 18 decimals
+
+        approveTokens(partyA, targetTokenAmount, targetTokenAmount * price / 10 ** 18);
+        approveTokens(partyB, targetTokenAmount, 0);
+
+        // Make an offer
+        vm.prank(partyA);
+        shotgun.makeOffer(agreementId, address(paymentToken), price, targetTokenAmount);
+
+        // Validate the offer details
+        (,,,,,,,, Shotgun.Offer memory currentOffer) = shotgun.agreements(agreementId);
+        assertEq(currentOffer.targetToken, address(targetToken));
+        assertEq(currentOffer.paymentToken, address(paymentToken));
+        assertEq(currentOffer.price, price);
+        assertEq(currentOffer.targetTokenAmount, targetTokenAmount);
+        assertEq(currentOffer.offeror, partyA);
+        assert(currentOffer.active == true);
+        assert(currentOffer.staked == true);
+
+        // Fetch the offer valuation
+        (uint256 offeredPrice, uint256 oraclePrice) = shotgun.getOfferValuation(agreementId);
+
+        // Log the fetched values for verification
+        console.log("Offered Price: %s", offeredPrice / 10 ** 15);
+        console.log("Oracle Price: %s", oraclePrice / 10 ** 15);
+
+        // Validate the fetched offer valuation
+        assertEq(offeredPrice, price);
+        assertGt(oraclePrice, 0, "Oracle price should be greater than zero");
+    }
 }

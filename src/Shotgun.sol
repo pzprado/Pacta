@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AgreementStorage} from "./AgreementStorage.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {IChronicle, ISelfKisser} from "./interfaces/IChronicle.sol";
-import "forge-std/console.sol";
 
 contract Shotgun is AgreementStorage {
     using EventsLib for *;
@@ -21,7 +20,6 @@ contract Shotgun is AgreementStorage {
         returns (uint256)
     {
         // Whitelist the Shotgun contract with the given oracle
-        console.log("Whitelisting oracle %s", _oracle);
         selfKisser.selfKiss(_oracle);
 
         agreementCounter++;
