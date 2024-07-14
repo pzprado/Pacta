@@ -22,6 +22,22 @@ interface IChronicle {
 
 // Copied from [self-kisser](https://github.com/chronicleprotocol/self-kisser/blob/main/src/ISelfKisser.sol).
 interface ISelfKisser {
+    // -- User Functionality --
+
     /// @notice Kisses caller on oracle `oracle`.
+    ///
+    /// @dev Reverts if oracle `oracle` not supported.
+    /// @dev Reverts if SelfKisser dead.
+    ///
+    /// @param oracle The oracle to kiss the caller on.
     function selfKiss(address oracle) external;
+
+    /// @notice Kisses address `who` on oracle `oracle`.
+    ///
+    /// @dev Reverts if oracle `oracle` not supported.
+    /// @dev Reverts if SelfKisser dead.
+    ///
+    /// @param oracle The oracle to kiss address `who` on.
+    /// @param who The address to kiss on oracle `oracle`.
+    function selfKiss(address oracle, address who) external;
 }

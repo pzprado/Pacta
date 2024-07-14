@@ -4,16 +4,6 @@ pragma solidity ^0.8.13;
 import "./helpers/ShotgunTestHelper.sol";
 
 contract ShotgunTest is ShotgunTestHelper {
-    function setUp() public {
-        shotgun = new Shotgun(selfKisser);
-        targetToken = new MockERC20("MockToken", "MTK");
-        paymentToken = new MockERC20("Wrapped ETH", "WETH");
-        targetToken.mint(partyA, initialSupply);
-        targetToken.mint(partyB, initialSupply);
-        paymentToken.mint(partyA, initialSupply);
-        paymentToken.mint(partyB, initialSupply);
-    }
-
     function testA_CreateAgreement() public {
         uint256 initialAgreementCounter = shotgun.agreementCounter();
 

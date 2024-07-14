@@ -12,10 +12,31 @@ contract ShotgunTestHelper is Test {
     address partyA = address(0x1);
     address partyB = address(0x2);
     address thirdParty = address(0x3);
-    address oracle = address(0x4);
-    address selfKisser = address(0x5);
+    address oracle = 0xdD7c06561689c73f0A67F2179e273cCF45EFc964; // ARB oracle
+    address selfKisser = 0xc0fe3a070Bc98b4a45d735A52a1AFDd134E0283f;
     uint256 duration = 7 days;
     uint256 initialSupply = 1000 * 10 ** 18; // Adjust according to decimals
+
+    function setUp() public {
+        uint256 arbFork = vm.createFork(vm.envString("ARBITRUM_SEPOLIA_RPC_URL"), 63683874);
+        vm.selectFork(arbFork);
+        console.log("Fork created at block %s", block.number);
+
+        shotgun = new Shotgun(selfKisser);
+        targetToken = new MockERC20("MockToken", "MTK");
+        paymentToken = new MockERC20("Wrapped ETH", "WETH");
+        targetToken.mint(partyA, initialSupply);
+        targetToken.mint(partyB, initialSupply);
+        paymentToken.mint(partyA, initialSupply);
+        paymentToken.mint(partyB, initialSupply);
+        vm.deal(partyA, initialSupply / 5);
+        vm.deal(partyB, initialSupply / 5);
+        deal(address(targetToken), partyA, initialSupply);
+        deal(address(targetToken), partyB, initialSupply);
+        deal(address(paymentToken), partyA, initialSupply);
+        deal(address(paymentToken), partyB, initialSupply);
+        console.log("Setup complete");
+    }
 
     function approveTokens(address _party, uint256 _targetTokenAmount, uint256 _paymentTokenAmount) internal {
         vm.prank(_party);
@@ -31,7 +52,7 @@ contract ShotgunTestHelper is Test {
     }
 
     function createAndApproveAgreement() internal returns (uint256) {
-        uint256 agreementId = shotgun.createAgreement(partyB, address(targetToken), address(this), duration);
+        uint256 agreementId = shotgun.createAgreement(partyB, address(targetToken), oracle, duration);
 
         approveTokens(partyA, type(uint256).max, type(uint256).max);
         approveTokens(partyB, type(uint256).max, type(uint256).max);
