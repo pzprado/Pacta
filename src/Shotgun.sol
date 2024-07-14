@@ -6,15 +6,25 @@ import {AgreementStorage} from "./AgreementStorage.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {IChronicle, ISelfKisser} from "./interfaces/IChronicle.sol";
 
+/// @title Shotgun Contract for Institutional Shareholders Agreements
+/// @notice This contract allows parties to create, approve, and manage shotgun agreements onchain
 contract Shotgun is AgreementStorage {
     using EventsLib for *;
 
     ISelfKisser public selfKisser;
 
+    /// @notice Constructor to set the SelfKisser contract address
+    /// @param _selfKisser Address of the SelfKisser contract
     constructor(address _selfKisser) {
         selfKisser = ISelfKisser(_selfKisser);
     }
 
+    /// @notice Create a new agreement
+    /// @param _party2 Address of the second party in the agreement
+    /// @param _targetToken Address of the target token
+    /// @param _oracle Address of the oracle for price data
+    /// @param _duration Duration of the agreement
+    /// @return agreementId The ID of the newly created agreement
     function createAgreement(address _party2, address _targetToken, address _oracle, uint256 _duration)
         external
         returns (uint256)
@@ -48,6 +58,8 @@ contract Shotgun is AgreementStorage {
         return agreementCounter;
     }
 
+    /// @notice Approve an agreement by either party
+    /// @param agreementId ID of the agreement to be approved
     function approveAgreement(uint256 agreementId) external {
         Agreement storage agreement = agreements[agreementId];
         require(msg.sender == agreement.party1 || msg.sender == agreement.party2, "Not a party to this agreement.");
@@ -73,6 +85,11 @@ contract Shotgun is AgreementStorage {
         }
     }
 
+    /// @notice Make an offer for an agreement
+    /// @param agreementId ID of the agreement
+    /// @param paymentToken Address of the payment token
+    /// @param price Price of the target tokens in payment tokens
+    /// @param targetTokenAmount Amount of target tokens
     function makeOffer(uint256 agreementId, address paymentToken, uint256 price, uint256 targetTokenAmount) external {
         Agreement storage agreement = agreements[agreementId];
         require(agreement.bound, "Agreement not bound.");
@@ -105,6 +122,8 @@ contract Shotgun is AgreementStorage {
         );
     }
 
+    /// @notice Accept an active offer
+    /// @param agreementId ID of the agreement
     function acceptOffer(uint256 agreementId) external {
         Agreement storage agreement = agreements[agreementId];
         Offer storage offer = agreement.currentOffer;
@@ -125,6 +144,8 @@ contract Shotgun is AgreementStorage {
         emit EventsLib.OfferAccepted(agreementId, msg.sender);
     }
 
+    /// @notice Make a counter offer to an active offer
+    /// @param agreementId ID of the agreement
     function counterOffer(uint256 agreementId) external {
         Agreement storage agreement = agreements[agreementId];
         Offer storage offer = agreement.currentOffer;
@@ -150,6 +171,8 @@ contract Shotgun is AgreementStorage {
         emit EventsLib.CounterOfferMade(agreementId, msg.sender);
     }
 
+    /// @notice Expire an offer that has passed its expiry time
+    /// @param agreementId ID of the agreement
     function expireOffer(uint256 agreementId) external {
         Agreement storage agreement = agreements[agreementId];
         Offer storage offer = agreement.currentOffer;
@@ -167,6 +190,10 @@ contract Shotgun is AgreementStorage {
         emit EventsLib.OfferExpired(agreementId);
     }
 
+    /// @notice Get the valuation of an active offer using the oracle
+    /// @param agreementId ID of the agreement
+    /// @return offerPrice The price of the offer
+    /// @return oraclePrice The price from the oracle
     function getOfferValuation(uint256 agreementId) public view returns (uint256 offerPrice, uint256 oraclePrice) {
         Agreement storage agreement = agreements[agreementId];
         Offer storage offer = agreement.currentOffer;
@@ -178,6 +205,6 @@ contract Shotgun is AgreementStorage {
         return (offer.price, oracleValue);
     }
 
-    // Fallback function to receive Ether
+    /// @notice Fallback function to receive Ether
     receive() external payable {}
 }
