@@ -40,8 +40,8 @@ The main contract that manages the Shotgun Clause process.
 1. **Clone the Repository**
 
     ```sh
-    git clone https://github.com/yourusername/shotgun-clause.git
-    cd shotgun-clause
+    git clone https://github.com/pzprado/Pacta.git
+    cd pacta
     ```
 
 2. **Install Foundry**
@@ -53,8 +53,13 @@ The main contract that manages the Shotgun Clause process.
     ```sh
     forge install
     ```
+4. 1 **Test the Smart Contracts**
 
-4. **Compile the Smart Contracts**
+    ```sh
+    forge test
+    ``
+
+4. 2 **Compile the Smart Contracts**
 
     ```sh
     forge build
@@ -65,7 +70,7 @@ The main contract that manages the Shotgun Clause process.
     Deploy the contracts to a local or test network:
 
     ```sh
-    forge script scripts/Deploy.s.sol --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY>
+    forge script scripts/DeployShotgun.s.sol --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY>
     ```
 
 ## Usage
@@ -124,3 +129,13 @@ Pacta uses Chronicle oracles to fetch real-time data for offer valuations. The o
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+
+## DISCLAIMER
+
+The materials and information contained in this project are provided on an "as is" and "as available" basis without any warranties of any kind, either express or implied. This project is a work in progress, submitted for an Ethereum hackathon, and is not yet intended for production use. By accessing or using this project, you acknowledge that it is currently under development and may contain bugs, errors, or incomplete features.
+
+To the fullest extent permissible pursuant to applicable law, the developers and contributors disclaim all warranties, express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, and non-infringement. The developers and contributors do not warrant that the project will be uninterrupted or error-free, or that defects will be corrected.
+
+Use of this project is at your own risk. In no event shall the developers or contributors be liable for any direct, indirect, incidental, special, consequential, or exemplary damages (including but not limited to damages for loss of profits, goodwill, use, data, or other intangible losses) arising out of or in connection with your use of or inability to use the project, even if the developers and contributors have been advised of the possibility of such damages.
+
+You are solely responsible for determining the appropriateness of using or redistributing the project and assume any risks associated with your exercise of permissions under this disclaimer.
